@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Girly Timetable</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background-color: #ffe6f0;
+            color: #ff69b4;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        .timetable {
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        .class-info {
+            font-size: 2em;
+            font-weight: bold;
+            padding: 10px;
+            border: 2px solid #ff69b4;
+            border-radius: 15px;
+            background-color: #fff0f5;
+            margin: 20px 0;
+        }
+        h1 {
+            font-size: 2.5em;
+            color: #ff1493;
+        }
+        .countdown {
+            font-size: 2em;
+            margin-top: 10px;
+            color: #ff4500;
+        }
+    </style>
+</head>
+<body>
+    <h1>My Timetable</h1>
+    <div class="timetable">
+        <!-- Timetable Data -->
+    </div>
+    <div class="class-info">
+        Current Status: <span id="current-class"></span><br>
+        Next Class: <span id="next-class"></span>
+    </div>
+    <div class="countdown" id="countdown-timer">
+        <!-- Countdown Timer -->
+    </div>
+    <script>
+        const timetable = {
+            "Monday": [
+                { time: "11:00", end: "12:15", class: "Educational Technology", building: "C1", room: "2021", professor: "Jamie" },
+                { time: "15:30", end: "16:45", class: "Critical Reading in the Disciplines", building: "C1", room: "1055", professor: "Mary" }
+            ],
+            "Wednesday": [
+                { time: "11:00", end: "12:15", class: "Educational Technology", building: "C1", room: "2021", professor: "Jamie" },
+                { time: "15:30", end: "16:45", class: "Critical Reading in the Disciplines", building: "C1", room: "1055", professor: "Mary" }
+            ],
+            "Tuesday": [
+                { time: "14:00", end: "15:15", class: "Language & Communication Disorders", building: "C1", room: "0042", professor: "Mohammed" },
+                { time: "15:30", end: "16:45", class: "History of the Arab World from 1500", building: "C1", room: "2035", professor: "Yehia" }
+            ],
+            "Thursday": [
+                { time: "14:00", end: "15:15", class: "Language & Communication Disorders", building: "C1", room: "0042", professor: "Mohammed" },
+                { time: "15:30", end: "16:45", class: "History of the Arab World from 1500", building: "C1", room: "2035", professor: "Yehia" }
+            ],
+        };
+
+        function getCurrentClass(timetable) {
+            const now = new Date();
+            const today = now.toLocaleDateString('en-US', { weekday: 'long' });
+            const currentTime = now.getHours() * 60 + now.getMinutes();
+
+            let currentClass = "No class right now";
+            let nextClass = "No more classes today";
+            let nextClassTime = null;
+            let endTime = null;
+
+            const breaks = [
+                { day: "Monday", start: "12:15", end: "15:30" },
+                { day: "Tuesday", start: "11:00", end: "14:00" },
+                { day: "Tuesday", start: "15:15", end: "15:30" },
+                { day: "Wednesday", start: "12:15", end: "15:30" },
+                { day: "Thursday", start: "11:00", end: "14:00" },
+                { day: "Thursday", start: "15:15", end: "15:30" }
+            ];
+
+            let onBreak = false;
+            for (let i = 0; i < breaks.length; i++) {
+                if (breaks[i].day === today) {
+                    const breakStart = breaks[i].start.split(':');
+                    const breakStartMinutes = parseInt(breakStart[0]) * 60 + parseInt(breakStart[1]);
+
+                    const breakEnd = breaks[i].end.split(':');
+                    const breakEndMinutes = parseInt(breakEnd[0]) * 60 + parseInt(breakEnd[1]);
+
+                    if (currentTime >= breakStartMinutes && currentTime < breakEndMinutes) {
+                        onBreak = true;
+                        endTime = breakEndMinutes;
+                        break;
+                    }
+                }
+            }
+
+            if (onBreak) {
+                currentClass = "Break Time";
+            } else {
+                if (timetable[today]) {
+                    for (let i = 0; i < timetable[today].length; i++) {
+                        const classTime = timetable[today][i].time.split(':');
+                        const classMinutes = parseInt(classTime[0]) * 60 + parseInt(classTime[1]);
+
+                        const endTimeArr = timetable[today][i].end.split(':');
+                        const classEndMinutes = parseInt(endTimeArr[0]) * 60 + parseInt(endTimeArr[1]);
+
+                        if (classMinutes <= currentTime && classEndMinutes > currentTime) {
+                            currentClass = `${timetable[today][i].class} - Building: ${timetable[today][i].building}, Room: ${timetable[today][i].room}, Prof: ${timetable[today][i].professor}`;
+                            endTime = classEndMinutes;
+                        } else if (classMinutes > currentTime && nextClass === "No more classes today") {
+                            nextClass = `${timetable[today][i].class} - Building: ${timetable[today][i].building}, Room: ${timetable[today][i].room}, Prof: ${timetable[today][i].professor}`;
+                            nextClassTime = classMinutes;
+                        }
+                    }
+                }
+            }
+
+            document.getElementById('current-class').textContent = currentClass;
+            document.getElementById('next-class').textContent = nextClass;
+
+            if (endTime !== null) {
+                startCountdown(endTime, onBreak ? "Break ends in" : "Class ends in");
+            } else if (nextClassTime !== null) {
+                startCountdown(nextClassTime, "Next class starts in");
+            }
+        }
+
+        function startCountdown(targetMinutes, label) {
+            function updateCountdown() {
+                const now = new Date();
+                const currentTime = now.getHours() * 60 + now.getMinutes();
+                const minutesLeft = targetMinutes - currentTime;
+
+                const hours = Math.floor(minutesLeft / 60);
+                const minutes = minutesLeft % 60;
+
+                let countdownText = `${label}: `;
+                if (hours > 0) countdownText += `${hours}h `;
+                countdownText += `${minutes}m`;
+
+                document.getElementById('countdown-timer').textContent = countdownText;
+
+                if (minutesLeft > 0) {
+                    setTimeout(updateCountdown, 1000 * 60); // Update every minute
+                } else {
+                    document.getElementById('countdown-timer').textContent = "Time's up!";
+                    getCurrentClass(timetable); // Refresh to update current/next class info
+                }
+            }
+            updateCountdown();
+        }
+
+        getCurrentClass(timetable);
+        setInterval(() => getCurrentClass(timetable), 60000); // Refresh class info every minute
+    </script>
+</body>
+</html>
