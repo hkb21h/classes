@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HKB's Classes</title>
+    <title>HKB Classes</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;600&display=swap">
     <style>
         body {
@@ -25,18 +25,21 @@
             border: 2px solid #ff69b4;
             border-radius: 15px;
             background-color: #fff0f5;
-            margin: 20px 0;
+            margin: 20px 0;  /* Added margin for spacing */
+            text-align: left; /* Align text to the left */
         }
         h1 {
             font-size: 2.5em;
             color: #ff1493;
             font-weight: 600;
+            margin-bottom: 20px; /* Added margin for spacing */
         }
         .countdown {
             font-size: 2em;
             margin-top: 10px;
             color: #ff4500;
             font-weight: 300;
+            margin-top: 20px;  /* Added margin for spacing */
         }
         .buttons {
             margin-top: 20px;
@@ -62,8 +65,10 @@
         <!-- Timetable Data -->
     </div>
     <div class="class-info">
-        Current Status: <span id="current-class"></span><br>
-        Next Class: <span id="next-class"></span>
+        <p>Current Status: <span id="current-class"></span></p>
+        <p>Next Class: <span id="next-class"></span></p>
+        <p>Class Location: Building: <span id="building"></span>, Room: <span id="room"></span></p>
+        <p>Prof: <span id="professor"></span></p>
     </div>
     <div class="countdown" id="countdown-timer">
         <!-- Countdown Timer -->
@@ -110,6 +115,9 @@
 
             let currentClass = "No class right now";
             let nextClass = "No more classes today";
+            let building = "";
+            let room = "";
+            let professor = "";
             let nextClassTime = null;
             let endTime = null;
 
@@ -119,6 +127,9 @@
                 document.getElementById('countdown-timer').textContent = "";
                 document.getElementById('current-class').textContent = currentClass;
                 document.getElementById('next-class').textContent = nextClass;
+                document.getElementById('building').textContent = building;
+                document.getElementById('room').textContent = room;
+                document.getElementById('professor').textContent = professor;
                 document.getElementById('skip-button').style.display = "none";
                 document.getElementById('skip-all-button').style.display = "none";
                 document.getElementById('undo-button').style.display = "none";
@@ -141,7 +152,10 @@
 
                     // Set current class if ongoing
                     if (classMinutes <= currentTime && classEndMinutes > currentTime) {
-                        currentClass = `${timetable[today][i].class} - Building: ${timetable[today][i].building}, Room: ${timetable[today][i].room}, Prof: ${timetable[today][i].professor}`;
+                        currentClass = timetable[today][i].class;
+                        building = timetable[today][i].building;
+                        room = timetable[today][i].room;
+                        professor = timetable[today][i].professor;
                         endTime = classEndMinutes;
                         document.getElementById('skip-button').style.display = "none";
                         document.getElementById('skip-all-button').style.display = "none";
@@ -150,7 +164,10 @@
 
                     // Set next class if it hasn't started yet
                     if (classMinutes > currentTime && nextClassTime === null) {
-                        nextClass = `${timetable[today][i].class} - Building: ${timetable[today][i].building}, Room: ${timetable[today][i].room}, Prof: ${timetable[today][i].professor}`;
+                        nextClass = timetable[today][i].class;
+                        building = timetable[today][i].building;
+                        room = timetable[today][i].room;
+                        professor = timetable[today][i].professor;
                         nextClassTime = classMinutes;
                         document.getElementById('skip-button').style.display = "inline";
                         document.getElementById('skip-all-button').style.display = "inline";
@@ -161,6 +178,9 @@
 
             document.getElementById('current-class').textContent = currentClass;
             document.getElementById('next-class').textContent = nextClass;
+            document.getElementById('building').textContent = building;
+            document.getElementById('room').textContent = room;
+            document.getElementById('professor').textContent = professor;
 
             if (endTime !== null) {
                 startCountdown(endTime, "Class ends in");
