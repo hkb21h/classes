@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Girly Timetable</title>
+    <title>HKB's Classes</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;600&display=swap">
     <style>
         body {
@@ -38,6 +38,22 @@
             color: #ff4500;
             font-weight: 300;
         }
+        .buttons {
+            margin-top: 20px;
+        }
+        .buttons button {
+            font-size: 1em;
+            padding: 10px 20px;
+            margin: 5px;
+            background-color: #ff69b4;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        .buttons button:hover {
+            background-color: #ff1493;
+        }
     </style>
 </head>
 <body>
@@ -52,7 +68,18 @@
     <div class="countdown" id="countdown-timer">
         <!-- Countdown Timer -->
     </div>
+    <div class="buttons">
+        <button id="skip-button" onclick="skipClass()">Skip Class (I'm just a girl)</button>
+        <button id="skip-all-button" onclick="skipAllClasses()">Skip All Classes (I'm just a girl)</button>
+        <button id="undo-button" onclick="undoSkip()" style="display: none;">I changed my mind</button>
+    </div>
     <script>
+        const holidays = [
+            "2024-12-25", // Example holiday (Christmas)
+            "2024-01-01", // New Year's Day
+            // Add more holidays here
+        ];
+
         const timetable = {
             "Monday": [
                 { time: "11:00", end: "12:15", class: "Educational Technology", building: "C1", room: "2021", professor: "Jamie" },
@@ -72,8 +99,12 @@
             ],
         };
 
+        let skippedClasses = [];
+        let skippedNextClass = null;
+
         function getCurrentClass(timetable) {
             const now = new Date();
+            const todayDate = now.toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
             const today = now.toLocaleDateString('en-US', { weekday: 'long' });
             const currentTime = now.getHours() * 60 + now.getMinutes();
 
@@ -82,50 +113,48 @@
             let nextClassTime = null;
             let endTime = null;
 
-            const breaks = [
-                { day: "Monday", start: "12:15", end: "15:30" },
-                { day: "Tuesday", start: "11:00", end: "14:00" },
-                { day: "Tuesday", start: "15:15", end: "15:30" },
-                { day: "Wednesday", start: "12:15", end: "15:30" },
-                { day: "Thursday", start: "11:00", end: "14:00" },
-                { day: "Thursday", start: "15:15", end: "15:30" }
-            ];
-
-            let onBreak = false;
-            for (let i = 0; i < breaks.length; i++) {
-                if (breaks[i].day === today) {
-                    const breakStart = breaks[i].start.split(':');
-                    const breakStartMinutes = parseInt(breakStart[0]) * 60 + parseInt(breakStart[1]);
-
-                    const breakEnd = breaks[i].end.split(':');
-                    const breakEndMinutes = parseInt(breakEnd[0]) * 60 + parseInt(breakEnd[1]);
-
-                    if (currentTime >= breakStartMinutes && currentTime < breakEndMinutes) {
-                        onBreak = true;
-                        endTime = breakEndMinutes;
-                        break;
-                    }
-                }
+            if (holidays.includes(todayDate)) {
+                currentClass = "It's a holiday today! No classes.";
+                nextClass = "";
+                document.getElementById('countdown-timer').textContent = "";
+                document.getElementById('current-class').textContent = currentClass;
+                document.getElementById('next-class').textContent = nextClass;
+                document.getElementById('skip-button').style.display = "none";
+                document.getElementById('skip-all-button').style.display = "none";
+                document.getElementById('undo-button').style.display = "none";
+                return;
             }
 
-            if (onBreak) {
-                currentClass = "Break Time";
-            } else {
-                if (timetable[today]) {
-                    for (let i = 0; i < timetable[today].length; i++) {
-                        const classTime = timetable[today][i].time.split(':');
-                        const classMinutes = parseInt(classTime[0]) * 60 + parseInt(classTime[1]);
+            if (timetable[today]) {
+                for (let i = 0; i < timetable[today].length; i++) {
+                    const classTime = timetable[today][i].time.split(':');
+                    const classMinutes = parseInt(classTime[0]) * 60 + parseInt(classTime[1]);
 
-                        const endTimeArr = timetable[today][i].end.split(':');
-                        const classEndMinutes = parseInt(endTimeArr[0]) * 60 + parseInt(endTimeArr[1]);
+                    const endTimeArr = timetable[today][i].end.split(':');
+                    const classEndMinutes = parseInt(endTimeArr[0]) * 60 + parseInt(endTimeArr[1]);
 
-                        if (classMinutes <= currentTime && classEndMinutes > currentTime) {
-                            currentClass = `${timetable[today][i].class} - Building: ${timetable[today][i].building}, Room: ${timetable[today][i].room}, Prof: ${timetable[today][i].professor}`;
-                            endTime = classEndMinutes;
-                        } else if (classMinutes > currentTime && nextClass === "No more classes today") {
-                            nextClass = `${timetable[today][i].class} - Building: ${timetable[today][i].building}, Room: ${timetable[today][i].room}, Prof: ${timetable[today][i].professor}`;
-                            nextClassTime = classMinutes;
-                        }
+                    // Check for skipped classes
+                    if (skippedClasses.includes(timetable[today][i].class)) {
+                        console.log("Skipped class:", timetable[today][i].class);
+                        continue;
+                    }
+
+                    // Set current class if ongoing
+                    if (classMinutes <= currentTime && classEndMinutes > currentTime) {
+                        currentClass = `${timetable[today][i].class} - Building: ${timetable[today][i].building}, Room: ${timetable[today][i].room}, Prof: ${timetable[today][i].professor}`;
+                        endTime = classEndMinutes;
+                        document.getElementById('skip-button').style.display = "none";
+                        document.getElementById('skip-all-button').style.display = "none";
+                        document.getElementById('undo-button').style.display = "none";
+                    }
+
+                    // Set next class if it hasn't started yet
+                    if (classMinutes > currentTime && nextClassTime === null) {
+                        nextClass = `${timetable[today][i].class} - Building: ${timetable[today][i].building}, Room: ${timetable[today][i].room}, Prof: ${timetable[today][i].professor}`;
+                        nextClassTime = classMinutes;
+                        document.getElementById('skip-button').style.display = "inline";
+                        document.getElementById('skip-all-button').style.display = "inline";
+                        break;
                     }
                 }
             }
@@ -134,7 +163,7 @@
             document.getElementById('next-class').textContent = nextClass;
 
             if (endTime !== null) {
-                startCountdown(endTime, onBreak ? "Break ends in" : "Class ends in");
+                startCountdown(endTime, "Class ends in");
             } else if (nextClassTime !== null) {
                 startCountdown(nextClassTime, "Next class starts in");
             }
@@ -163,6 +192,69 @@
                 }
             }
             updateCountdown();
+        }
+
+        function skipClass() {
+            const now = new Date();
+            const today = now.toLocaleDateString('en-US', { weekday: 'long' });
+            const currentTime = now.getHours() * 60 + now.getMinutes();
+
+            // Identify the next class to skip
+            if (timetable[today]) {
+                for (let i = 0; i < timetable[today].length; i++) {
+                    const classTime = timetable[today][i].time.split(':');
+                    const classMinutes = parseInt(classTime[0]) * 60 + parseInt(classTime[1]);
+
+                    if (classMinutes > currentTime) {
+                        skippedClasses.push(timetable[today][i].class);
+                        console.log("Skipping next class:", timetable[today][i].class);
+                        break;
+                    }
+                }
+            }
+
+            document.getElementById('skip-button').style.display = "none";
+            document.getElementById('skip-all-button').style.display = "none";
+            document.getElementById('undo-button').style.display = "inline";
+            getCurrentClass(timetable); // Refresh to update current/next class info
+        }
+
+        function skipAllClasses() {
+            const now = new Date();
+            const today = now.toLocaleDateString('en-US', { weekday: 'long' });
+            const currentTime = now.getHours() * 60 + now.getMinutes();
+
+            // Skip all classes remaining for today
+            if (timetable[today]) {
+                for (let i = 0; i < timetable[today].length; i++) {
+                    const classTime = timetable[today][i].time.split(':');
+                    const classMinutes = parseInt(classTime[0]) * 60 + parseInt(classTime[1]);
+
+                    if (classMinutes > currentTime) {
+                        skippedClasses.push(timetable[today][i].class);
+                    }
+                }
+                console.log("Skipped all remaining classes for today.");
+            }
+
+            document.getElementById('skip-button').style.display = "none";
+            document.getElementById('skip-all-button').style.display = "none";
+            document.getElementById('undo-button').style.display = "inline";
+            
+            // Reset the countdown timer
+            document.getElementById('countdown-timer').textContent = "No more classes today";
+            
+            getCurrentClass(timetable); // Refresh to update current/next class info
+        }
+
+        function undoSkip() {
+            skippedClasses = [];
+            skippedNextClass = null;
+            document.getElementById('undo-button').style.display = "none";
+            document.getElementById('skip-button').style.display = "inline";
+            document.getElementById('skip-all-button').style.display = "inline";
+            console.log("Undo skip action");
+            getCurrentClass(timetable); // Refresh to update current/next class info
         }
 
         getCurrentClass(timetable);
